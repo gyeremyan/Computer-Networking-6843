@@ -1,72 +1,119 @@
-
 from socket import *
+import socket
+import os
+import sys
+import struct
+import time
+import select
+import binascii
 
+ICMP_ECHO_REQUEST = 8
+MAX_HOPS = 30
+TIMEOUT = 2.0
+TRIES = 2
 
-def smtp_client(port=1025, mailserver='127.0.0.1'):
-    msg = "\r\n My message"
-    endmsg = "\r\n.\r\n"
+# The packet that we shall send to each router along the path is the ICMP echo
+# request packet, which is exactly what we had used in the ICMP ping exercise.
+# We shall use the same packet that we built in the Ping exercise
+def checksum(str):
+    # In this function we make the checksum of our packet
+    # hint: see icmpPing lab
+    csum = 0
+    countTo = (len(str) / 2) * 2
+    count = 0
+    while count < countTo:
+        thisVal = (str[count+1]) * 256 + (str[count])
+        csum = csum + thisVal
+        csum = csum & 0xffffffff
+        count = count + 2
+    if countTo < len(str):
+        csum = csum + (str[len(str) - 1])
+        csum = csum & 0xffffffff
 
-    # Choose a mail server (e.g. Google mail server) if you want to verify the script beyond GradeScope
+    csum = (csum >> 16) + (csum & 0xffff)
+    csum = csum + (csum >> 16)
+    answer = ~csum
+    answer = answer & 0xffff
+    answer = answer >> 8 | (answer << 8 & 0xff00)
+    return answer
 
-    # Create socket called clientSocket and establish a TCP connection with mailserver and port
+def build_packet():
+    # In the sendOnePing() method of the ICMP Ping exercise, firstly the header of our
+    # packet to be sent was made, secondly the checksum was appended to the header and
+    # then finally the complete packet was sent to the destination.
+    # Make the header in a similar way to the ping exercise.
+    # Append checksum to the header.
+    # Don't send the packet yet, just return the final packet in this function.
+    # So the function ending should look like this
+    # packet = header + data
+    ID = 11238
+    myChecksum = 0
+    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
+    data = struct.pack("d", time.time())
+    myChecksum = checksum(header + data)
+    myChecksum = socket.htons(myChecksum)
+    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
+    packet = header + data
 
-    # Fill in start
-    clientSocket = socket(AF_INET, SOCK_STREAM)
-    clientSocket.connect((mailserver, port))
-    # Fill in end
+    return packet
 
-    recv = clientSocket.recv(1024).decode()
-    #print(recv) #You can use these print statement to validate return codes from the server.
-    #if recv[:3] != '220':
-    #    print('220 reply not received from server.')
+def get_route(hostname):
+    timeLeft = TIMEOUT
+    for ttl in range(1,MAX_HOPS):
+        for tries in range(TRIES):
+            destAddr = socket.gethostbyname(hostname)
+            #Fill in start
+            # Make a raw socket named mySocket
+            icmp =socket.getprotobyname("icmp")
+            mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
+            #Fill in end
+            mySocket.setsockopt(socket.IPPROTO_IP, socket.IP_TTL, struct.pack('I', ttl))
+            mySocket.settimeout(TIMEOUT)
+            try:
+                d = build_packet()
+                mySocket.sendto(d, (hostname, 0))
+                t= time.time()
+                startedSelect = time.time()
+                whatReady = select.select([mySocket], [], [], timeLeft)
+                howLongInSelect = (time.time() - startedSelect)
+                if whatReady[0] == []: # Timeout
+                    print("   *         *            *          Request timed out.")
+                recvPacket, addr = mySocket.recvfrom(1024)
+                timeReceived = time.time()
+                timeLeft = timeLeft - howLongInSelect
+                if timeLeft <= 0:
+                    print("   *         *            *          Request timed out.")
+            except socket.timeout:
+                continue
 
-    # Send HELO command and print server response.
-    heloCommand = 'HELO Alice\r\n'
-    clientSocket.send(heloCommand.encode())
-    recv1 = clientSocket.recv(1024).decode()
-    #print(recv1) 
-    #if recv1[:3] != '250':
-    #    print('250 reply not received from server.')
+            else:
+                #Fill in start
+                # Fetch the icmp type from the IP packet
+                icmpHeader = recvPacket[20:28]
+                type, code, checksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
+                #Fill in end
+                if type == 11:
+                    bytes = struct.calcsize("d")
+                    timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
+                    print("   %d     rtt=%.0f ms    %s" % (ttl, (timeReceived - t)*1000, addr[0]))
 
-    # Send MAIL FROM command and handle server response.
-    # Fill in start
-    mailFromCommand = 'MAIL FROM: TEST1\r\n'
-    clientSocket.send(mailFromCommand.encode())
-    recv2 = clientSocket.recv(1024).decode()
-    # Fill in end
+                elif type == 3:
+                    bytes = struct.calcsize("d")
+                    timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
+                    print("   %d     rtt=%.0f ms    %s" % (ttl, (timeReceived - t)*1000, addr[0]))
 
-    # Send RCPT TO command and handle server response.
-    # Fill in start
-    rcptToCommand = 'RCPT TO: TEST2\r\n'
-    clientSocket.send(rcptToCommand.encode())
-    recv3 = clientSocket.recv(1024).decode()
-    # Fill in end
+                elif type == 0:
+                    bytes = struct.calcsize("d")
+                    timeSent = struct.unpack("d", recvPacket[28:28 + bytes])[0]
+                    print("   %d     rtt=%.0f ms    %s" % (ttl, (timeReceived - t)*1000, addr[0]))
+                    return
 
-    # Send DATA command and handle server response.
-    # Fill in start
-    dataCommand = 'DATA\r\n'
-    clientSocket.send(dataCommand.encode())
-    recv4 = clientSocket.recv(1024).decode()
-    # Fill in end
+                else:
+                    print("error")
+                break
 
-    # Send message data.
-    # Fill in start
-    clientSocket.send(msg.encode())
-    # Fill in end
-
-    # Message ends with a single period, send message end and handle server response.
-    # Fill in start
-    clientSocket.send(endmsg.encode())
-    recv5 = clientSocket.recv(1024).decode()
-    # Fill in end
-
-    # Send QUIT command and handle server response.
-    # Fill in start
-    quitCommand = 'QUIT\r\n'
-    clientSocket.send(quitCommand.encode())
-    recv6 = clientSocket.recv(1024).decode()
-    # Fill in end
-
+            finally:
+                mySocket.close()
 
 if __name__ == '__main__':
-    smtp_client(1025, '127.0.0.1')
+    get_route("google.co.il")
