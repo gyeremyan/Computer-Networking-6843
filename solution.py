@@ -102,16 +102,6 @@ def get_route(hostname):
                 continue
 
             else:
-                #Fill in start
-                #Fetch the icmp type from the IP packet
-                #Fill in end
-                try: #try to fetch the hostname
-                    #Fill in start
-                    #Fill in end
-                except herror:   #if the host does not provide a hostname
-                    #Fill in start
-                    #Fill in end
-
                 if types == 11:
                     bytes = struct.calcsize("d")
                     timeSent = struct.unpack("d", recvPacket[28:28 +
