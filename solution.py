@@ -44,13 +44,19 @@ def build_packet():
     # then finally the complete packet was sent to the destination.
     myChecksum = 0
     myID = os.getpid() & 0xFFFF
-    # Make the header in a similar way to the ping exercise.
+    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, myID, 1)
+    #header = struct.pack("!HHHHH", ICMP_ECHO_REQUEST, 0, myChecksum, pid, 1)
+    data = struct.pack("d", time.time())
+
+    # Calculate the checksum on the data and the dummy header.
     # Append checksum to the header.
+    myChecksum = checksum(header + data)
+    if sys.platform == 'darwin':
+        myChecksum = socket.htons(myChecksum) & 0xffff
+    else:
+        myChecksum = htons(myChecksum)
 
-    # Don’t send the packet yet , just return the final packet in this function.
-    #Fill in end
-
-    # So the function ending should look like this
+    header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, myID, 1)
 
     packet = header + data
     return packet
