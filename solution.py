@@ -16,20 +16,21 @@ TRIES = 1
 # request packet, which is exactly what we had used in the ICMP ping exercise.
 # We shall use the same packet that we built in the Ping exercise
 
-def checksum(str_):
-    # In this function we make the checksum of our packet
-    str_ = bytearray(str_)
+def checksum(string):
+# In this function we make the checksum of our packet
     csum = 0
-    countTo = (len(str_) // 2) * 2
+    countTo = (len(string) // 2) * 2
+    count = 0
 
-    for count in range(0, countTo, 2):
-        thisVal = str_[count+1] * 256 + str_[count]
-        csum = csum + thisVal
-        csum = csum & 0xffffffff
+    while count < countTo:
+        thisVal = (string[count + 1]) * 256 + (string[count])
+        csum += thisVal
+        csum &= 0xffffffff
+        count += 2
 
-    if countTo < len(str_):
-        csum = csum + str_[-1]
-        csum = csum & 0xffffffff
+    if countTo < len(string):
+        csum += (string[len(string) - 1])
+        csum &= 0xffffffff
 
     csum = (csum >> 16) + (csum & 0xffff)
     csum = csum + (csum >> 16)
