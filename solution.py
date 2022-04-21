@@ -41,7 +41,6 @@ def build_packet():
     # In the sendOnePing() method of the ICMP Ping exercise ,firstly the header of our
     # packet to be sent was made, secondly the checksum was appended to the header and
     myChecksum = 0
-
     # Get process ID
     myID = os.getpid() & 0xFFFF
     sendTime = time.time()
@@ -61,14 +60,10 @@ def build_packet():
        myChecksum = htons(myChecksum)
     # Add actual checksum to header
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, myID, 1)
-
     # Create packet with final header
     packet = header + data
-
     #Fill in end
-
     # So the function ending should look like this
-
     packet = header + data
     return packet
 
@@ -113,7 +108,6 @@ def get_route(hostname):
                     #Fill in end
             except timeout:
                 continue
-
             else:
                 #Fill in start
                 #Fetch the icmp type from the IP packet
@@ -126,13 +120,7 @@ def get_route(hostname):
                 try: #try to fetch the hostname
                     #Fill in start
                     # Get IP Header
-                    #ip_header = struct.unpack('!BBHHHBBH4s4s',recvPacket[:20])
-
                     # Get source address from IP header
-                    #sourceAddress = inet_ntoa(ip_header[8])
-
-                    #sourceHostname = gethostbyaddr(sourceAddress)
-
                     sourceHostname = gethostbyaddr(addr[0])[0]
                     #print("SOURCE HOSTNAME =", sourceHostname)
                     #Fill in end
@@ -148,9 +136,7 @@ def get_route(hostname):
                     #You should add your responses to your lists here
                     rtt = str(round(timeSent * 1000)) + "ms"
                     tracelist1.append([str(ttl),rtt,str(addr[0]),sourceHostname])
-                    #print("List 1", tracelist1)
                     tracelist2.append(tracelist1[-1])
-                    #print("List 2",tracelist2)
 
                     #Fill in end
                 elif types == 3:
