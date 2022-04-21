@@ -40,13 +40,6 @@ def build_packet():
     #Fill in start
     # In the sendOnePing() method of the ICMP Ping exercise ,firstly the header of our
     # packet to be sent was made, secondly the checksum was appended to the header and
-    # then finally the complete packet was sent to the destination.
-
-    # Make the header in a similar way to the ping exercise.
-    # Append checksum to the header.
-
-    # Don’t send the packet yet , just return the final packet in this function.
-
     myChecksum = 0
 
     # Get process ID
@@ -54,7 +47,7 @@ def build_packet():
     sendTime = time.time()
     # Create header with standby checksum
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, myID, 1)
-    data = struct.pack("d", time.time())
+    #data = struct.pack("d", time.time())
     data = struct.pack("d", sendTime)
 
     # Create checksum
@@ -136,12 +129,12 @@ def get_route(hostname):
                     #ip_header = struct.unpack('!BBHHHBBH4s4s',recvPacket[:20])
 
                     # Get source address from IP header
-                    sourceAddress = inet_ntoa(ip_header[8])
+                    #sourceAddress = inet_ntoa(ip_header[8])
 
-                    sourceHostname = gethostbyaddr(sourceAddress)
+                    #sourceHostname = gethostbyaddr(sourceAddress)
 
                     sourceHostname = gethostbyaddr(addr[0])[0]
-                    print("SOURCE HOSTNAME =", sourceHostname)
+                    #print("SOURCE HOSTNAME =", sourceHostname)
                     #Fill in end
                 except herror:   #if the host does not provide a hostname
                     #Fill in start
@@ -155,9 +148,9 @@ def get_route(hostname):
                     #You should add your responses to your lists here
                     rtt = str(round(timeSent * 1000)) + "ms"
                     tracelist1.append([str(ttl),rtt,str(addr[0]),sourceHostname])
-                    print("List 1", tracelist1)
+                    #print("List 1", tracelist1)
                     tracelist2.append(tracelist1[-1])
-                    print("List 2",tracelist2)
+                    #print("List 2",tracelist2)
 
                     #Fill in end
                 elif types == 3:
