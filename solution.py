@@ -63,7 +63,7 @@ def build_packet():
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, myID, 1)
 
     # Create packet with final header
-    #packet = header + data
+    packet = header + data
 
     #Fill in end
 
